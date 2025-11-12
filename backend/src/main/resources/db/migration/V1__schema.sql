@@ -1,11 +1,11 @@
--- Roles y usuarios (para E2)
+-- Roles y usuarios (ids BIGSERIAL; FKs BIGINT)
 CREATE TABLE IF NOT EXISTS roles (
-  id SERIAL PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(32) UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   email VARCHAR(120) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
   enabled BOOLEAN NOT NULL DEFAULT true,
@@ -13,24 +13,24 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS user_roles (
-  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role_id INT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, role_id)
 );
 
--- Catálogo mínimo (para futuras vistas)
+-- Catálogo (ids BIGSERIAL; FKs BIGINT)
 CREATE TABLE IF NOT EXISTS categories (
-  id SERIAL PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(80) UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS products (
-  id SERIAL PRIMARY KEY,
+  id BIGSERIAL PRIMARY KEY,
   name VARCHAR(160) NOT NULL,
   description TEXT,
   price NUMERIC(12,2) NOT NULL DEFAULT 0,
   stock INT NOT NULL DEFAULT 0,
-  category_id INT REFERENCES categories(id),
+  category_id BIGINT REFERENCES categories(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP
 );
