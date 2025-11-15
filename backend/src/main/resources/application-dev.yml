@@ -17,4 +17,7 @@ security:
   jwt:
     issuer: mercadito-uam
     expiration-minutes: 120
-    secret: ${JWT_SECRET:dev-change-me}
+    secret: ${JWT_SECRET:esto-es-una-clave-larga-de-32-caracteres-minimo-1234}
+logging:
+  level:
+    org.springframework.security: DEBUG

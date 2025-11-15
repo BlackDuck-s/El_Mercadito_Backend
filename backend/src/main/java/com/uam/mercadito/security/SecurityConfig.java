@@ -31,23 +31,24 @@ public class SecurityConfig {
   @Bean
   SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-      .csrf(csrf -> csrf.disable())
-      .cors(cors -> cors.configurationSource(req -> {
-        var c = new CorsConfiguration();
-        c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        c.setAllowedHeaders(List.of("*"));
-        c.setAllowCredentials(true);
-        return c;
-      }))
-      .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      .authorizeHttpRequests(auth -> auth
-        .requestMatchers("/auth/**", "/swagger-ui/**", "/api-docs/**", "/actuator/health").permitAll()
-        .requestMatchers(HttpMethod.GET, "/categories/**", "/products/**").permitAll()
-        .anyRequest().authenticated()
-      )
-      .authenticationProvider(authenticationProvider())
-      .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> cors.configurationSource(req -> {
+          var c = new CorsConfiguration();
+          c.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+          c.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+          c.setAllowedHeaders(List.of("*"));
+          c.setAllowCredentials(true);
+          return c;
+        }))
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/swagger-ui/**", "/api-docs/**", "/actuator/health").permitAll()
+            .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/categories/**", "/products/**").permitAll()
+            .anyRequest().authenticated())
+        .authenticationProvider(authenticationProvider())
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
