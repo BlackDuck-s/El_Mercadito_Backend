@@ -5,7 +5,7 @@ Este documento describe la organización del equipo y la asignación de tareas d
 
 El backend ya cuenta con:
 
-- ✅ Autenticación con JWT.
+- ✅ Autenticación con JWT
 - ✅ Usuarios y roles reales (CLIENT, SELLER, ADMIN) cargados desde BD.
 - ✅ CRUD de productos con control de acceso por rol (SELLER/ADMIN).
 - ✅ Búsqueda y paginación de productos.
