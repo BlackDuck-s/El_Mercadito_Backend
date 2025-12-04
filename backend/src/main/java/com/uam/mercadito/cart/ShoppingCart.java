@@ -38,14 +38,14 @@ public class ShoppingCart {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String status = "PENDING"; 
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "total", nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
