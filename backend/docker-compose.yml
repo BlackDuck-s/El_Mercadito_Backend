@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:16
@@ -15,5 +17,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mercadito_backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mercadito_dev   # host = db, NO localhost
+      SPRING_DATASOURCE_USERNAME: merca
+      SPRING_DATASOURCE_PASSWORD: jijijija
+      JWT_SECRET: super-secret-dev
+    ports:
+      - "8080:8080"
+
 volumes:
   pgdata:
