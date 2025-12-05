@@ -18,14 +18,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
       )
       FROM Product p
       LEFT JOIN p.category c
-      WHERE (:q IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%',:q,'%'))
-             OR LOWER(COALESCE(p.description,'')) LIKE LOWER(CONCAT('%',:q,'%')))
+      WHERE (:q IS NULL OR p.name LIKE :q)
         AND (:categoryId IS NULL OR c.id = :categoryId)
       """)
   Page<ProductListDTO> search(
       @Param("q") String q,
       @Param("categoryId") Long categoryId,
-      Pageable pageable);
+      Pageable pageable
+  );
 
   @Query("""
       SELECT new com.uam.mercadito.product.dto.ProductDetailDTO(

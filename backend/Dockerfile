@@ -1,28 +1,34 @@
-# Etapa de build: usamos Eclipse Temurin 21 y el Maven Wrapper (mvnw)
+# Etapa 1: build con Maven Wrapper
 FROM eclipse-temurin:21-jdk AS build
+
 WORKDIR /app
 
-# Copiamos los archivos necesarios para que mvnw funcione
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src src
+# Copiamos Maven Wrapper y pom.xml
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
 
-# Damos permisos de ejecución a mvnw y construimos el JAR
-RUN chmod +x mvnw && ./mvnw -q clean package -DskipTests
+# Damos permiso de ejecución al wrapper (Linux)
+RUN chmod +x mvnw
 
-# Etapa de runtime: solo Java 21 y el JAR ya construido
+# Descargamos dependencias para cachear
+RUN ./mvnw -q -B dependency:go-offline
+
+# Copiamos el código fuente
+COPY src ./src
+
+# Empaquetamos la app (sin tests para que sea más rápido)
+RUN ./mvnw -q -B package -DskipTests
+
+# Etapa 2: imagen final
 FROM eclipse-temurin:21-jdk
+
 WORKDIR /app
 
-# Copiamos el JAR generado en la etapa anterior
-COPY --from=build /app/target/*.jar app.jar
+# Copiamos el JAR generado
+COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
 
-# Exponemos el puerto 8080 (lo que te piden)
+# Exponemos el puerto 8080
 EXPOSE 8080
-
-# Perfil por defecto dentro del contenedor
-ENV SPRING_PROFILES_ACTIVE=dev
 
 # Comando de arranque
 ENTRYPOINT ["java", "-jar", "app.jar"]

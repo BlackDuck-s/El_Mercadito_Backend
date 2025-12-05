@@ -21,10 +21,20 @@ public class ProductService {
   private final CategoryRepository categories;
 
   /* -------- lectura -------- */
+  //public Page<ProductListDTO> list(String q, Long categoryId, Pageable pageable) {
+  //  String query = (q == null || q.isBlank()) ? null : q.trim();
+  //  return repo.search(query, categoryId, pageable);
+  //}
+
   public Page<ProductListDTO> list(String q, Long categoryId, Pageable pageable) {
-    String query = (q == null || q.isBlank()) ? null : q.trim();
-    return repo.search(query, categoryId, pageable);
-  }
+    String pattern = null;
+
+    if (q != null && !q.isBlank()) {
+        pattern = "%" + q.trim() + "%";
+    }
+
+    return repo.search(pattern, categoryId, pageable);
+}
 
   public ProductDetailDTO get(Long id) {
     return repo.findDetailById(id)

@@ -11,29 +11,22 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U merca -d mercadito_dev"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
+      - backend_pgdata:/var/lib/postgresql/data
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: mercadito_backend
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mercadito_dev   # host = db, NO localhost
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/mercadito
       SPRING_DATASOURCE_USERNAME: merca
-      SPRING_DATASOURCE_PASSWORD: jijijija
-      JWT_SECRET: super-secret-dev
+      SPRING_DATASOURCE_PASSWORD: merca
+    depends_on:
+      - db
     ports:
       - "8080:8080"
 
 volumes:
-  pgdata:
+  backend_pgdata:
