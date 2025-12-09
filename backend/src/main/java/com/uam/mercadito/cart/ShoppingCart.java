@@ -45,7 +45,7 @@ public class ShoppingCart {
     @Builder.Default
     private String status = "PENDING"; 
 
-    @Column(nullable = false, precision = 12, scale = 2)
+    @Column(name = "total", nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
