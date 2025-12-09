@@ -2,12 +2,12 @@ package com.uam.mercadito.cart;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,8 +32,8 @@ public class ShoppingCartController {
      * GET /cart
      */
     @GetMapping
-    public CartDetailDTO getCart(@AuthenticationPrincipal AppUser principal) {
-        return service.getOrCreateCart(principal.getId());
+    public CartDetailDTO getCart(@RequestHeader("X-User-Id") AppUser user) {
+        return service.getOrCreateCart(user.getEmail());
     }
 
     /**
@@ -42,9 +42,9 @@ public class ShoppingCartController {
      */
     @PostMapping("/items")
     @ResponseStatus(HttpStatus.CREATED)
-    public void addItemToCart(@AuthenticationPrincipal AppUser user, 
+    public void addItemToCart(@RequestHeader("X-User-Id") AppUser user, 
                               @Valid @RequestBody CartItemAddDTO dto) {
-        service.addItem(user.getId(), dto);
+        service.addItem(user.getEmail(), dto);
     }
 
     /**
@@ -53,9 +53,9 @@ public class ShoppingCartController {
      */
     @DeleteMapping("/items/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeItemFromCart(@AuthenticationPrincipal AppUser user, 
+    public void removeItemFromCart(@RequestHeader("X-User-Id") AppUser user, 
                                    @PathVariable Long itemId) {
-        service.removeItem(user.getId(), itemId);
+        service.removeItem(user.getEmail(), itemId);
     }
 
     /**
@@ -64,7 +64,7 @@ public class ShoppingCartController {
      */
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void clearCart(@AuthenticationPrincipal AppUser user) {
-        service.clearCart(user.getId());
+    public void clearCart(@RequestHeader("X-User-Id") AppUser user) {
+        service.clearCart(user.getEmail());
     }
 }

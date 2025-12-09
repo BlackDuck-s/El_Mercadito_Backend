@@ -1,4 +1,4 @@
-package com.uam.mercadito.cart;
+package com.uam.mercadito.order;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -15,8 +15,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,38 +26,36 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "shopping_carts")
+@Table(name = "orders")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ShoppingCart {
-
+public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
-    private AppUser user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private AppUser user; 
 
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private String status = "PENDING"; 
+    @Column(nullable = false)
+    private Instant orderDate; 
 
     @Column(nullable = false, precision = 12, scale = 2)
-    @Builder.Default
-    private BigDecimal totalAmount = BigDecimal.ZERO;
+    private BigDecimal total;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Builder.Default
-    private Instant createdAt = Instant.now();
+    @Column(nullable = false, length = 20)
+    private String status; 
 
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private Set<CartItem> items = new HashSet<>();
+    private Set<OrderItem> items = new HashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        this.orderDate = Instant.now();
+    }
 }
