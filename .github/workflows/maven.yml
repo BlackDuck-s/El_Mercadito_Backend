@@ -55,11 +55,13 @@ jobs:
         working-directory: backend
         run: chmod +x mvnw
 
-      - name: Build and verify with Maven
-        working-directory: backend
+      - name: Build & test with Maven
+        working-directory: ./backend
         env:
-          SPRING_PROFILES_ACTIVE: dev
+          SPRING_PROFILES_ACTIVE: test
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/mercadito
           SPRING_DATASOURCE_USERNAME: merca
           SPRING_DATASOURCE_PASSWORD: merca
-        run: ./mvnw clean verify -B
+          SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+          SPRING_FLYWAY_ENABLED: "true"
+        run: ./mvnw -B clean verify
