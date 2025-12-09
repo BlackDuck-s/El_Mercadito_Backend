@@ -11,50 +11,55 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
+      db:
         image: postgres:16
         env:
-          POSTGRES_DB: mercadito_test
+          POSTGRES_DB: mercadito
           POSTGRES_USER: merca
           POSTGRES_PASSWORD: merca
         ports:
           - 5432:5432
+        # Esperar a que la DB esté lista
         options: >-
-          --health-cmd="pg_isready -U merca -d mercadito_test"
+          --health-cmd="pg_isready -U merca -d mercadito"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
-
-    env:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mercadito_test
-      SPRING_DATASOURCE_USERNAME: merca
-      SPRING_DATASOURCE_PASSWORD: merca
-      SPRING_PROFILES_ACTIVE: dev
+          --health-retries=10
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '21'
-          cache: maven
+          cache: 'maven'
 
-      - name: Esperar a que arranque Postgres
+      - name: Wait for Postgres
         run: |
-          for i in {1..10}; do
-            if nc -z postgres 5432; then
-              echo "Postgres listo ✅"
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U merca >/dev/null 2>&1; then
+              echo "Postgres is up!"
               exit 0
             fi
-            echo "Esperando Postgres..."
-            sleep 3
+            echo "Waiting for Postgres..."
+            sleep 2
           done
-          echo "Postgres no arrancó a tiempo "
+          echo "Postgres did not become ready in time" >&2
           exit 1
 
-      - name: Build & Test (mvnw clean verify)
-        working-directory: ./backend
-        run: ./mvnw clean verify -B
+      # Muy importante: ejecutar todo dentro de /backend
+      - name: Make mvnw executable
+        working-directory: backend
+        run: chmod +x mvnw
+
+      - name: Run Maven tests (clean verify)
+        working-directory: backend
+        env:
+          SPRING_PROFILES_ACTIVE: dev
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/mercadito
+          SPRING_DATASOURCE_USERNAME: merca
+          SPRING_DATASOURCE_PASSWORD: merca
+        run: ./mvnw -B clean verify
