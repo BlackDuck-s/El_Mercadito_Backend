@@ -23,7 +23,7 @@ jobs:
           --health-cmd="pg_isready -U merca -d mercadito"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=5
 
     steps:
       - name: Checkout repository
@@ -32,28 +32,25 @@ jobs:
       - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '21'
-          cache: 'maven'
+          distribution: temurin
+          java-version: 21
+          cache: maven
 
-      - name: Install netcat for waiting
-        run: sudo apt-get update && sudo apt-get install -y netcat-openbsd
+      - name: Install PostgreSQL client (for pg_isready)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
 
       - name: Wait for Postgres to be ready
         run: |
-          echo "Esperando a que Postgres esté disponible..."
-          for i in {1..30}; do
-            if nc -z localhost 5432; then
-              echo "✅ Postgres listo!"
-              break
+          for i in {1..20}; do
+            if pg_isready -h localhost -p 5432 -U merca -d mercadito > /dev/null 2>&1; then
+              echo "Postgres is up!"; exit 0;
             fi
-            echo "⏳ Esperando..."
-            sleep 5
+            echo "Waiting for Postgres... ($i/20)";
+            sleep 3;
           done
-
-      - name: Make mvnw executable
-        working-directory: backend
-        run: chmod +x mvnw
+          echo "Postgres did not start in time"; exit 1;
+        env:
+          PGPASSWORD: merca
 
       - name: Build & test with Maven
         working-directory: ./backend
@@ -62,6 +59,4 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/mercadito
           SPRING_DATASOURCE_USERNAME: merca
           SPRING_DATASOURCE_PASSWORD: merca
-          SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-          SPRING_FLYWAY_ENABLED: "true"
         run: ./mvnw -B clean verify
