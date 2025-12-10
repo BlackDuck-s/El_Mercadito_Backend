@@ -42,7 +42,7 @@ class AuthIntegrationTest {
 
     @Test
     void registerThenLoginAndMe_flowOk() {
-        var regReq = new RegisterRequest("test.client@uam.mx", "123456");
+        var regReq = new RegisterRequest("test.client@uam.mx", "123456", "123456", "Test Client", "555-1234");
 
         ResponseEntity<TokenResponse> regResp = restTemplate.postForEntity(
             baseUrl() + "/auth/register",
