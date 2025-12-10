@@ -1,17 +1,17 @@
 package com.uam.mercadito.security;
 
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.io.IOException;
 
@@ -19,36 +19,47 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-  private final JwtUtils jwtUtils;
-  private final CustomUserDetailsService userService;
+    private final JwtUtils jwtUtils;
+    private final CustomUserDetailsService userService;
 
-  @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
-    String p = request.getServletPath();
-    return "/auth/login".equals(p)
-        || p.startsWith("/swagger-ui")
-        || p.startsWith("/api-docs")
-        || "/actuator/health".equals(p);
-  }
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest req,
+            @NonNull HttpServletResponse res,
+            @NonNull FilterChain chain
+    ) throws ServletException, IOException {
 
-  @Override
-  protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-      throws ServletException, IOException {
+        final String header = req.getHeader("Authorization");
+        final String token;
+        final String username;
 
-    String header = req.getHeader("Authorization");
-    if (header != null && header.startsWith("Bearer ")) {
-      String token = header.substring(7);
-      try {
-        var jws = jwtUtils.parse(token);
-        String username = jws.getBody().getSubject();
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-          UserDetails userDetails = userService.loadUserByUsername(username);
-          var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-          auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-          SecurityContextHolder.getContext().setAuthentication(auth);
+        if (header == null || !header.startsWith("Bearer ")) {
+            chain.doFilter(req, res);
+            return;
         }
-      } catch (JwtException ignored) { /* token inválido/expirado: continúa sin autenticar */ }
+
+        token = header.substring(7);
+
+        try {
+            username = jwtUtils.extractUsername(token);
+
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userService.loadUserByUsername(username);
+
+                if (jwtUtils.isTokenValid(token, userDetails.getUsername())) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error validando JWT: " + e.getMessage());
+        }
+
+        chain.doFilter(req, res);
     }
-    chain.doFilter(req, res);
-  }
 }

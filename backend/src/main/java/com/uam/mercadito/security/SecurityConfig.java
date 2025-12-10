@@ -33,30 +33,24 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .cors(cors -> cors.configurationSource(req -> {
                     var c = new org.springframework.web.cors.CorsConfiguration();
-                    c.setAllowedOrigins(List.of("*")); // cambiar luego por dominio del frontend
+                    c.setAllowedOrigins(List.of("http://localhost:5173")); // Ajusta a tu puerto de React
                     c.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
                     c.setAllowedHeaders(List.of("*"));
+                    c.setAllowCredentials(true);
                     return c;
                 }))
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/favicon.ico")
-                        .permitAll()
+                                "/", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/favicon.ico"
+                        ).permitAll()
+
+                        
+                        .requestMatchers("/auth/request-seller-role").authenticated() 
 
                         .requestMatchers("/auth/**").permitAll()
-        
-                        .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-
+                        
                         .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
 

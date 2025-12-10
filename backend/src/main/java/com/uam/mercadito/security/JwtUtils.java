@@ -1,54 +1,67 @@
 package com.uam.mercadito.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-@Component
+@Service
 public class JwtUtils {
 
-  @Value("${security.jwt.secret}")
-  private String secret;
+    private static final String SECRET = "5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437";
+    private static final long EXPIRATION_TIME = 86400000; // 24 Horas
 
-  @Value("${security.jwt.issuer}")
-  private String issuer;
+    public String generateToken(String username, Collection<? extends GrantedAuthority> authorities) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList()));
 
-  @Value("${security.jwt.expiration-minutes}")
-  private long expirationMinutes;
-
-  private Key key() {
-    if (secret == null || secret.length() < 32) {
-      throw new IllegalStateException("security.jwt.secret must be at least 32 characters for HS256.");
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
-    return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-  }
 
-  public String generateToken(String username, Collection<? extends GrantedAuthority> roles) {
-    Instant now = Instant.now();
-    return Jwts.builder()
-        .setSubject(username)
-        .setIssuer(issuer)
-        .claim("roles", roles.stream().map(GrantedAuthority::getAuthority).toList())
-        .setIssuedAt(Date.from(now))
-        .setExpiration(Date.from(now.plus(expirationMinutes, ChronoUnit.MINUTES)))
-        .signWith(key(), SignatureAlgorithm.HS256)
-        .compact();
-  }
+    private Key getSignKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+    
+    public boolean isTokenValid(String token, String username) {
+        final String extractedUser = extractUsername(token);
+        return (extractedUser.equals(username) && !isTokenExpired(token));
+    }
 
-  public Jws<Claims> parse(String token) {
-    return Jwts.parserBuilder()
-        .requireIssuer(issuer)
-        .setSigningKey(key())
-        .build()
-        .parseClaimsJws(token);
-  }
+    public String extractUsername(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+
+    private boolean isTokenExpired(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration()
+                .before(new Date());
+    }
 }
