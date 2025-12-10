@@ -54,7 +54,7 @@ public class ShoppingCartService {
     }
 
     // =======================================================
-    // Lógica de Modificación (Corregida)
+    // Lógica de Modificación
     // =======================================================
 
     @Transactional
@@ -83,7 +83,7 @@ public class ShoppingCartService {
             throw new RuntimeException("Insufficient stock. Only " + product.getStock() + " available.");
         }
 
-        // 3. Asignación y Guardado (Corrige el error de inicialización)
+        // 3. Asignación y Guardado
         final CartItem item; 
 
         if (existingItemOptional.isPresent()) {
@@ -135,6 +135,39 @@ public class ShoppingCartService {
         cart.getItems().clear();
         
         recalculateCartTotal(cart);
+    }
+
+    // =======================================================
+    // NUEVO MÉTODO: CHECKOUT (Este faltaba)
+    // =======================================================
+    @Transactional
+    public void checkout(Long userId) {
+        // 1. Obtener carrito activo
+        ShoppingCart cart = cartRepository.findByUserIdAndStatus(userId, PENDING_STATUS)
+                .orElseThrow(() -> new RuntimeException("No active cart found to checkout"));
+
+        if (cart.getItems().isEmpty()) {
+            throw new RuntimeException("Cannot checkout an empty cart");
+        }
+
+        // 2. Validar y Descontar Stock
+        for (CartItem item : cart.getItems()) {
+            Product product = item.getProduct();
+            int newStock = product.getStock() - item.getQuantity();
+
+            if (newStock < 0) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            }
+
+            // Actualizar stock en BD
+            product.setStock(newStock);
+            productRepository.save(product);
+        }
+
+        // 3. Finalizar Carrito
+        cart.setStatus("COMPLETED");
+        cart.setUpdatedAt(Instant.now());
+        cartRepository.save(cart);
     }
 
     // =======================================================

@@ -1,23 +1,16 @@
 package com.uam.mercadito.cart;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.uam.mercadito.cart.dto.CartDetailDTO;
 import com.uam.mercadito.cart.dto.CartItemAddDTO;
 import com.uam.mercadito.user.AppUser;
-
+import com.uam.mercadito.user.AppUserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal; // Importante: Usar Principal
 
 @RestController
 @RequestMapping("/cart")
@@ -26,45 +19,50 @@ import lombok.RequiredArgsConstructor;
 public class ShoppingCartController {
 
     private final ShoppingCartService service;
+    private final AppUserRepository userRepository;
 
-    /**
-     * Obtiene el carrito activo del usuario.
-     * GET /cart
-     */
-    @GetMapping
-    public CartDetailDTO getCart(@AuthenticationPrincipal AppUser principal) {
-        return service.getOrCreateCart(principal.getId());
+    // Helper para obtener el usuario real desde el Token
+    private AppUser getAuthenticatedUser(Principal principal) {
+        if (principal == null) {
+            throw new RuntimeException("No hay usuario autenticado");
+        }
+        return userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + principal.getName()));
     }
 
-    /**
-     * Añade un producto al carrito o incrementa su cantidad.
-     * POST /cart/items
-     */
+    @GetMapping
+    public CartDetailDTO getCart(Principal principal) {
+        AppUser user = getAuthenticatedUser(principal);
+        return service.getOrCreateCart(user.getId());
+    }
+
     @PostMapping("/items")
     @ResponseStatus(HttpStatus.CREATED)
-    public void addItemToCart(@AuthenticationPrincipal AppUser user, 
+    public void addItemToCart(Principal principal, 
                               @Valid @RequestBody CartItemAddDTO dto) {
+        AppUser user = getAuthenticatedUser(principal);
         service.addItem(user.getId(), dto);
     }
 
-    /**
-     * Elimina un CartItem específico del carrito.
-     * DELETE /cart/items/{itemId}
-     */
     @DeleteMapping("/items/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeItemFromCart(@AuthenticationPrincipal AppUser user, 
+    public void removeItemFromCart(Principal principal, 
                                    @PathVariable Long itemId) {
+        AppUser user = getAuthenticatedUser(principal);
         service.removeItem(user.getId(), itemId);
     }
 
-    /**
-     * Vacía todo el carrito de compras.
-     * DELETE /cart
-     */
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void clearCart(@AuthenticationPrincipal AppUser user) {
+    public void clearCart(Principal principal) {
+        AppUser user = getAuthenticatedUser(principal);
         service.clearCart(user.getId());
+    }
+    
+    @PostMapping("/checkout")
+    @ResponseStatus(HttpStatus.OK)
+    public void checkout(Principal principal) {
+        AppUser user = getAuthenticatedUser(principal);
+        service.checkout(user.getId());
     }
 }
