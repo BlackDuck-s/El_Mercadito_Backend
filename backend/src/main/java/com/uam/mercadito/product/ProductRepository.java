@@ -36,4 +36,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
       WHERE p.id = :id
       """)
   Optional<ProductDetailDTO> findDetailById(@Param("id") Long id);
+
+  @Query("""
+      SELECT new com.uam.mercadito.product.dto.ProductListDTO(
+        p.id, p.name, p.description, p.price, p.stock, c.id, c.name
+      )
+      FROM Product p
+      LEFT JOIN p.category c
+      WHERE p.seller.email = :email
+      """)
+  Page<ProductListDTO> findBySellerEmail(@Param("email") String email, Pageable pageable);
+  
 }
