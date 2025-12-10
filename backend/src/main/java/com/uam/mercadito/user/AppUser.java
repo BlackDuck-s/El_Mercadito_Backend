@@ -20,7 +20,15 @@ public class AppUser {
   @Column(nullable = false, length = 255)
   private String password;
 
+  @Column(nullable = false, length = 255)
+  private String name;
+
+  @Column(nullable = false, length = 255)
+  private String phone;
+
+
   @Column(nullable = false)
+  @Builder.Default
   private boolean enabled = true;
 
   @Column(name = "created_at", updatable = false)
@@ -32,6 +40,7 @@ public class AppUser {
       joinColumns = @JoinColumn(name = "user_id"),
       inverseJoinColumns = @JoinColumn(name = "role_id")
   )
+  @Builder.Default
   private Set<Role> roles = new HashSet<>();
 
   @PrePersist

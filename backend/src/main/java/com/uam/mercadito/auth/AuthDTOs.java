@@ -14,7 +14,10 @@ public class AuthDTOs {
 
   public record RegisterRequest(
       @NotBlank @Email String email,
-      @NotBlank @Size(min = 6, max = 64) String password
+      @NotBlank @Size(min = 6, max = 64) String password,
+      @NotBlank @Size(min = 6, max = 64) String confirmPassword,
+      @NotBlank String name,
+      @NotBlank String phone
   ) {}
 
   public record TokenResponse(
